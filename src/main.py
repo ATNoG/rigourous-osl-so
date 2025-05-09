@@ -5,7 +5,7 @@ import time
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from connectors.tmf_api_connector import TmfApiConnector
 from models.mtd_action import MtdAction
@@ -131,8 +131,7 @@ async def handle_security_orchestrator_policy(service_spec: ServiceSpecWithActio
     service_order_ids = tmf_api_connector.get_ids_of_service_orders_using_service_spec(service_spec)
     logging.debug(f"Service Orders using Service Specification: {service_order_ids}")
     for service_order_id in service_order_ids:
-        service_order = tmf_api_connector.get_service_order(service_order_id)
-        service_order = tmf_api_connector.update_service_order_characteristics(service_order_id, service_spec)
+        service_order = tmf_api_connector.update_service_order(service_order_id, service_spec)
         if service_order:
             service_orders.append(service_order)
     return service_orders

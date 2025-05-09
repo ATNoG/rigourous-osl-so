@@ -5,7 +5,7 @@ from apis.auth import Auth as AuthApi
 from apis.tmf import Tmf as TmfApi
 from models.service_inventory import ServiceInventory
 from models.service_order import ServiceOrder
-from models.service_spec import ServiceSpec, ServiceSpecCharacteristic, ServiceSpecCharacteristicValue, ServiceSpecCharacteristicValueAndAlias
+from models.service_spec import ServiceSpec, ServiceSpecCharacteristic, ServiceSpecCharacteristicValue, ServiceSpecCharacteristicValueAndAlias, ServiceSpecWithAction
 
 class TmfApiConnector:
     _api: TmfApi
@@ -46,6 +46,10 @@ class TmfApiConnector:
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Could not get Service Specifications from OpenSlice"
             )
+        
+    def update_service_order(self, service_order_id: str, service_spec: ServiceSpecWithAction) -> Optional[ServiceOrder]:
+        service_order = self.get_service_order(service_order_id)
+        return self.update_service_order_characteristics(service_order_id, service_spec)
         
     def update_service_order_characteristics(
         self, 
