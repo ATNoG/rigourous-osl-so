@@ -11,6 +11,7 @@ from connectors.tmf_api_connector import TmfApiConnector
 from models.mtd_action import MtdAction
 from models.service_order import ServiceOrder
 from models.service_spec import ServiceSpec, ServiceSpecWithAction
+from models.so_policy import ChannelProtectionPolicy, FirewallPolicy, SiemPolicy, TelemetryPolicy
 from settings import settings
 
 VERSION = 2
@@ -31,6 +32,10 @@ metadata_tags = [
     {
         "name": "Service Specifications",
         "description": "Lists all Service Specifications in OpenSlice."
+    },
+    {
+        "name": "Security Orchestrator Policies",
+        "description": "Handles policies from Security Orchestrator."
     }
 ]
 
@@ -131,6 +136,26 @@ async def handle_security_orchestrator_policy(service_spec: ServiceSpecWithActio
         if service_order:
             service_orders.append(service_order)
     return service_orders
+
+@app.post(f"/v{VERSION}/telemetry", tags=["Security Orchestrator Policies"], responses={
+})
+async def handle_telemetry_policy(telemetry_configuration: TelemetryPolicy) -> List[ServiceOrder]:
+    pass
+
+@app.post(f"/v{VERSION}/firewall", tags=["Security Orchestrator Policies"], responses={
+})
+async def handle_firewall_policy(firewall_configuration: FirewallPolicy) -> List[ServiceOrder]:
+    pass
+
+@app.post(f"/v{VERSION}/siem", tags=["Security Orchestrator Policies"], responses={
+})
+async def handle_siem_policy(siem_configuration: SiemPolicy) -> List[ServiceOrder]:
+    pass
+
+@app.post(f"/v{VERSION}/channelProtection", tags=["Security Orchestrator Policies"], responses={
+})
+async def handle_channel_protection_policy(channel_protection_configuration: ChannelProtectionPolicy) -> List[ServiceOrder]:
+    pass
 
 if __name__ == "__main__":
     import uvicorn
