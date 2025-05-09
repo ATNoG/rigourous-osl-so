@@ -3,10 +3,11 @@ import logging
 import time
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Dict, List, Optional
+from typing import Dict, List
 
+from apis.security_orchestrator import SecurityOrchestrator
 from connectors.tmf_api_connector import TmfApiConnector
 from models.mtd_action import MtdAction
 from models.service_order import ServiceOrder
@@ -116,7 +117,7 @@ def list_service_orders() -> List[str]:
 def list_service_specs() -> List[str]:
     return [service_spec.name for service_spec in TmfApiConnector().list_service_specs()]
 
-@app.post(f"/v{VERSION}/so", tags=["Services"], responses={
+@app.post(f"/v{VERSION}/so", tags=["Security Orchestrator Policies"], responses={
     status.HTTP_400_BAD_REQUEST: {"description": "Missing service 'name' or 'id' from provided Service Specification"},
     status.HTTP_503_SERVICE_UNAVAILABLE: {"description": "Could not reach OpenSlice"}
 })
@@ -135,6 +136,15 @@ async def handle_security_orchestrator_policy(service_spec: ServiceSpecWithActio
         if service_order:
             service_orders.append(service_order)
     return service_orders
+
+@app.post(f"/v{VERSION}" + "/osl/{service_order_id}", tags=["Services"], responses={
+})
+async def handle_openslice_service_order(service_order_id: str, mspl: Request) -> ServiceOrder:
+    mspl_body = await mspl.body()
+    security_orchestrator = SecurityOrchestrator(settings.so_host)
+    if security_orchestrator.send_mspl(mspl_body):
+        # DO WORK
+        pass
 
 @app.post(f"/v{VERSION}/telemetry", tags=["Security Orchestrator Policies"], responses={
 })

@@ -1,4 +1,4 @@
-.PHONY: all build run dev test
+.PHONY: all build run dev
 
 all: dev
 
@@ -10,6 +10,3 @@ run:
 
 dev:
 	. venv/bin/activate && fastapi dev src/main.py
-
-test:
-	pytest

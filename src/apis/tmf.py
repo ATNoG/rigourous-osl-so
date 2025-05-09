@@ -25,10 +25,7 @@ class Tmf(OpenSlice):
                                 auth=self._auth)
         if response.status_code != requests.codes.ok:
             super().handle_response_not_ok(response)
-        # try:
         return ServiceOrder(**response.json())
-        # except:
-        #     return None
 
     def list_service_orders(self) -> List[ServiceOrder]:
         response = requests.get(f"{self._url}/serviceOrdering/{self.API_VERSION}/serviceOrder",
