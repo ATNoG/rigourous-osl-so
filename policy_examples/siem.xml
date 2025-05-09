@@ -1,0 +1,43 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes'?>
+<ITResourceOrchestration id="omspl_46bdc9a9035540d4b257bd686a7e6bc5" xmlns="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <ITResource id="mspl_47bdc9a9035540d4b257bd686a7e6c54"
+        orchestrationID="omspl_47bdc9a9035540d4b257bd686a7e6bc5">
+        <configuration xsi:type='RuleSetConfiguration'>
+            <capability>
+                <Name>Network_traffic_analysis</Name>
+            </capability>
+            <configurationRule>
+                <configurationRuleAction xsi:type='MonitoringAction'>
+                    <monitoringActionType>ALERT</monitoringActionType>
+                    <correlationRules>
+                        <filename>incibe_dos.xml</filename> <!--> Común a ambas </!-->
+                        <group>cerberus_snort</group> <!--> Común a ambas </!-->
+                        <correlationRule>
+                            <id>444443</id>
+                            <level>10</level>
+                            <description>Snort Event ID 20101 with RuleId 1000020: Possible DoS Flood TCP Syn</description>
+                </correlationRule>
+            </correlationRules>
+                </configurationRuleAction>
+                <configurationCondition xsi:type='MonitoringConfigurationConditions'>
+                    <monitoringConfigurationCondition>
+                        <SiemCorrelations>
+                            <SiemCorrelation>
+                                <correlationRuleId>444443</correlationRuleId>
+                                <agentEventRule>20100</agentEventRule> <!--> Cuando hay más de uno, se traduce a <if_sid>20100, 20101</if_sid> </!-->
+                    <agentEventRule>20101</agentEventRule>
+                                <agentRuleId>1000020</agentRuleId>
+                            </SiemCorrelation>
+                        </SiemCorrelations>
+                    </monitoringConfigurationCondition>
+                </configurationCondition>
+                <Name>Rule_wazuh_333333</Name>
+            </configurationRule>
+            <Name>Conf_333333</Name>
+        </configuration>
+        <priority>1000</priority>
+        <enablerCandidates>
+            <enabler>wazuh</enabler>
+        </enablerCandidates>
+    </ITResource>
+</ITResourceOrchestration>

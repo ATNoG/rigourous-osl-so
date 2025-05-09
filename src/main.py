@@ -147,24 +147,36 @@ async def handle_openslice_service_order(service_order_id: str, mspl: Request) -
         pass
 
 @app.post(f"/v{VERSION}/telemetry", tags=["Security Orchestrator Policies"], responses={
+    status.HTTP_400_BAD_REQUEST: {"description": "Missing service 'name' or 'id' from provided Service Specification"},
+    status.HTTP_503_SERVICE_UNAVAILABLE: {"description": "Could not reach OpenSlice"}
 })
 async def handle_telemetry_policy(telemetry_configuration: TelemetryPolicy) -> List[ServiceOrder]:
-    pass
+    service_spec = telemetry_configuration.to_service_spec()
+    return await handle_security_orchestrator_policy(service_spec)
 
 @app.post(f"/v{VERSION}/firewall", tags=["Security Orchestrator Policies"], responses={
+    status.HTTP_400_BAD_REQUEST: {"description": "Missing service 'name' or 'id' from provided Service Specification"},
+    status.HTTP_503_SERVICE_UNAVAILABLE: {"description": "Could not reach OpenSlice"}
 })
 async def handle_firewall_policy(firewall_configuration: FirewallPolicy) -> List[ServiceOrder]:
-    pass
+    service_spec = firewall_configuration.to_service_spec()
+    return await handle_security_orchestrator_policy(service_spec)
 
 @app.post(f"/v{VERSION}/siem", tags=["Security Orchestrator Policies"], responses={
+    status.HTTP_400_BAD_REQUEST: {"description": "Missing service 'name' or 'id' from provided Service Specification"},
+    status.HTTP_503_SERVICE_UNAVAILABLE: {"description": "Could not reach OpenSlice"}
 })
 async def handle_siem_policy(siem_configuration: SiemPolicy) -> List[ServiceOrder]:
-    pass
+    service_spec = siem_configuration.to_service_spec()
+    return await handle_security_orchestrator_policy(service_spec)
 
 @app.post(f"/v{VERSION}/channelProtection", tags=["Security Orchestrator Policies"], responses={
+    status.HTTP_400_BAD_REQUEST: {"description": "Missing service 'name' or 'id' from provided Service Specification"},
+    status.HTTP_503_SERVICE_UNAVAILABLE: {"description": "Could not reach OpenSlice"}
 })
 async def handle_channel_protection_policy(channel_protection_configuration: ChannelProtectionPolicy) -> List[ServiceOrder]:
-    pass
+    service_spec = channel_protection_configuration.to_service_spec()
+    return await handle_security_orchestrator_policy(service_spec)
 
 if __name__ == "__main__":
     import uvicorn

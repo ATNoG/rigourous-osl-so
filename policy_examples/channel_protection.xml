@@ -1,0 +1,48 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes'?>
+<ITResourceOrchestration id="omspl_46bdc9a9035540d4b257bd686a7e6bc3" xmlns="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd mspl.xsd">
+    <ITResource id="mspl_46bdc9a9035540d4b257bd686a7e6c31" orchestrationID="omspl_46bdc9a9035540d4b257bd686a7e6bc3">
+        <configuration xsi:type="RuleSetConfiguration">
+            <capability>
+                <Name>channel_protection</Name>
+            </capability>
+            <configurationRule>
+                <configurationRuleAction xsi:type="ChannelProtectionRuleAction">
+                    <channelProtectionActionType>PROACTIVE</channelProtectionActionType>
+                </configurationRuleAction>
+                <configurationCondition xsi:type="ChannelProtectionConfigurationCondition">
+                    <spd>
+                        <localAddress>192.168.157.68</localAddress>
+                        <remoteAddress>192.168.157.70</remoteAddress>
+                        <modeType>TRANSPORT</modeType>
+                        <sad>
+                            <encryptionAlgorithm>aes</encryptionAlgorithm>
+                            <encryptionKey1>key1</encryptionKey1>
+                            <encryptionKey2>key2</encryptionKey2>
+                            <encIv>keyenc</encIv>
+                            <integrityAlgorithm>md5</integrityAlgorithm>
+                            <intKey1>keyint1</intKey1>
+                            <intKey2>keyint2</intKey2>
+                            <softByte>512</softByte>
+                            <softPackets>20</softPackets>
+                            <softAdded>64</softAdded>
+                            <softUsed>1024</softUsed>
+                            <hardByte>1024</hardByte>
+                            <hardPackets>10</hardPackets>
+                            <hardAdded>128</hardAdded>
+                            <hardUsed>2048</hardUsed>
+                        </sad>
+                    </spd>
+                </configurationCondition>
+                <externalData xsi:type="Priority">
+                    <value>60000</value>
+                </externalData>
+                <Name>Rule0</Name>
+                <isCNF>false</isCNF>
+            </configurationRule>
+            <Name>Conf0</Name>
+        </configuration>
+        <enablerCandidates>
+            <enabler>channel_protection</enabler>
+        </enablerCandidates>
+    </ITResource>
+</ITResourceOrchestration>
