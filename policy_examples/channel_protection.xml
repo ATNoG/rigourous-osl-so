@@ -3,7 +3,7 @@
     <ITResource id="mspl_46bdc9a9035540d4b257bd686a7e6c31" orchestrationID="omspl_46bdc9a9035540d4b257bd686a7e6bc3">
         <configuration xsi:type="RuleSetConfiguration">
             <capability>
-                <Name>channel_protection</Name>
+                <Name>Channel_Protection</Name>
             </capability>
             <configurationRule>
                 <configurationRuleAction xsi:type="ChannelProtectionRuleAction">
