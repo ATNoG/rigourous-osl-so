@@ -131,7 +131,7 @@ async def handle_openslice_service_order(service_order_id: str, mspl: Request) -
     policy_type = PolicyType.from_mspl(mspl_body.decode("utf-8"))
     print(policy_type)
     if policy_type:
-        security_orchestrator = SecurityOrchestrator(settings.so_host)
+        security_orchestrator = SecurityOrchestrator(f"http://{settings.so_host}")
         if security_orchestrator.send_mspl(mspl_body):
             await service_orders_waiting_policies[policy_type].put(service_order_id)
             return service_order_id

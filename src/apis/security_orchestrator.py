@@ -14,5 +14,5 @@ class SecurityOrchestrator:
         }
         response = requests.post(f"{self._url}/meservice",
                                 headers=headers,
-                                content=mspl)
+                                data=mspl)
         return response.status_code == requests.codes.ok

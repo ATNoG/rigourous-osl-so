@@ -1,7 +1,6 @@
 <?xml version='1.0' encoding='UTF-8' standalone='yes'?>
 <ITResourceOrchestration id="omspl_46bdc9a9035540d4b257bd686a7e6bc5" xmlns="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <ITResource id="mspl_47bdc9a9035540d4b257bd686a7e6c54"
-        orchestrationID="omspl_47bdc9a9035540d4b257bd686a7e6bc5">
+    <ITResource id="mspl_47bdc9a9035540d4b257bd686a7e6c54" orchestrationID="omspl_47bdc9a9035540d4b257bd686a7e6bc5">
         <configuration xsi:type='RuleSetConfiguration'>
             <capability>
                 <Name>Network_traffic_analysis</Name>

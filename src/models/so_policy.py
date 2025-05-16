@@ -15,6 +15,7 @@ class PolicyType(str, Enum):
 
     @classmethod
     def from_mspl(cls, mspl: str) -> Optional["PolicyType"]:
+        print(mspl)
         doc = xmltodict.parse(mspl)
         print(doc)
         try:
