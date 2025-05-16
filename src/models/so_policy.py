@@ -1,3 +1,6 @@
+import xmltodict
+
+from abc import ABC, abstractmethod
 from enum import Enum
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -5,20 +8,23 @@ from typing import Optional
 from models.service_spec import ServiceSpecCharacteristic, ServiceSpecCharacteristicValue, ServiceSpecCharacteristicValueAndAlias, ServiceSpecWithAction
 
 class PolicyType(str, Enum):
-    CHANNEL_PROTECTION = "channel_protection"
-    FIREWALL = "firewall"
-    TELEMETRY = "telemetry"
-    SIEM = "siem"
+    CHANNEL_PROTECTION = "Channel_Protection"
+    FIREWALL = "Firewall"
+    TELEMETRY = "Telemetry"
+    SIEM = "Network_traffic_analysis"
 
-class ChannelProtectionPolicy(BaseModel):
-    local_address: Optional[str] = None
-    remote_address: Optional[str] = None
-    encryption_key_1: Optional[str] = Field(alias="enc_key_1", default=None)
-    encryption_key_2: Optional[str] = Field(alias="enc_key_2", default=None)
-    integrity_key_1: Optional[str] = Field(alias="int_key_1", default=None)
-    integrity_key_2: Optional[str] = Field(alias="int_key_2", default=None)
+    @classmethod
+    def from_mspl(cls, mspl: str) -> Optional["PolicyType"]:
+        doc = xmltodict.parse(mspl)
+        print(doc)
+        try:
+            name = doc["ITResourceOrchestration"]["ITResource"]["configuration"]["capability"]["Name"]
+            return PolicyType(name)
+        except:
+            return None
 
-    def to_service_spec(self, service_name: str="RIGOUROUS Channel Protection") -> ServiceSpecWithAction:
+class Policy(BaseModel, ABC):
+    def to_service_spec(self, service_name: str) -> ServiceSpecWithAction:
         return ServiceSpecWithAction(
             name=service_name,
             service_spec_characteristic=[
@@ -32,6 +38,21 @@ class ChannelProtectionPolicy(BaseModel):
                 )
             ]
         )
+    
+    @abstractmethod
+    def __json__(self) -> dict:
+        pass
+
+class ChannelProtectionPolicy(Policy):
+    local_address: Optional[str] = None
+    remote_address: Optional[str] = None
+    encryption_key_1: Optional[str] = Field(alias="enc_key_1", default=None)
+    encryption_key_2: Optional[str] = Field(alias="enc_key_2", default=None)
+    integrity_key_1: Optional[str] = Field(alias="int_key_1", default=None)
+    integrity_key_2: Optional[str] = Field(alias="int_key_2", default=None)
+
+    def to_service_spec(self, service_name: str="RIGOUROUS Channel Protection") -> ServiceSpecWithAction:
+        return super().to_service_spec(service_name)
     
     def __json__(self) -> dict:
         res = {}
@@ -49,26 +70,14 @@ class ChannelProtectionPolicy(BaseModel):
             res.update({"int_key_2": self.integrity_key_2})
         return res
     
-class FirewallPolicy(BaseModel):
+class FirewallPolicy(Policy):
     name: Optional[str] = None
     source_address: Optional[str] = Field(alias="srcAddr", default=None)
     destination_address: Optional[str] = Field(alias="dstAddr", default=None)
     action: Optional[str] = None
 
     def to_service_spec(self, service_name: str="RIGOUROUS Firewall") -> ServiceSpecWithAction:
-        return ServiceSpecWithAction(
-            name=service_name,
-            service_spec_characteristic=[
-                ServiceSpecCharacteristic(
-                    name="CONFIG",
-                    service_spec_characteristic_value=[
-                        ServiceSpecCharacteristicValue(
-                            value=ServiceSpecCharacteristicValueAndAlias.from_string(self.__json__())
-                        )
-                    ]
-                )
-            ]
-        )
+        return super().to_service_spec(service_name)
     
     def __json__(self) -> dict:
         res = {}
@@ -82,21 +91,9 @@ class FirewallPolicy(BaseModel):
             res.update({"action": self.action})
         return res
 
-class SiemPolicy(BaseModel):
+class SiemPolicy(Policy):
     def to_service_spec(self, service_name: str="RIGOUROUS SIEM") -> ServiceSpecWithAction:
-        return ServiceSpecWithAction(
-            name=service_name,
-            service_spec_characteristic=[
-                ServiceSpecCharacteristic(
-                    name="CONFIG",
-                    service_spec_characteristic_value=[
-                        ServiceSpecCharacteristicValue(
-                            value=ServiceSpecCharacteristicValueAndAlias.from_string(self.__json__())
-                        )
-                    ]
-                )
-            ]
-        )
+        return super().to_service_spec(service_name)
     
     def __json__(self) -> dict:
         return {}
@@ -116,24 +113,12 @@ class TelemetryConfiguration(BaseModel):
             res.update({"exporterEndpoint": self.exporter_endpoint})
         return res
 
-class TelemetryPolicy(BaseModel):
+class TelemetryPolicy(Policy):
     deploy: Optional[str] = None
     configuration: Optional[TelemetryConfiguration] = None
 
     def to_service_spec(self, service_name: str="RIGOUROUS Telemetry") -> ServiceSpecWithAction:
-        return ServiceSpecWithAction(
-            name=service_name,
-            service_spec_characteristic=[
-                ServiceSpecCharacteristic(
-                    name="CONFIG",
-                    service_spec_characteristic_value=[
-                        ServiceSpecCharacteristicValue(
-                            value=ServiceSpecCharacteristicValueAndAlias.from_string(self.__json__())
-                        )
-                    ]
-                )
-            ]
-        )
+        return super().to_service_spec(service_name)
     
     def __json__(self) -> dict:
         res = {}

@@ -5,14 +5,14 @@ import time
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from apis.security_orchestrator import SecurityOrchestrator
 from connectors.tmf_api_connector import TmfApiConnector
 from models.mtd_action import MtdAction
 from models.service_order import ServiceOrder
 from models.service_spec import ServiceSpec, ServiceSpecWithAction
-from models.so_policy import ChannelProtectionPolicy, FirewallPolicy, SiemPolicy, TelemetryPolicy
+from models.so_policy import ChannelProtectionPolicy, FirewallPolicy, PolicyType, SiemPolicy, TelemetryPolicy
 from settings import settings
 
 VERSION = 2
@@ -105,6 +105,13 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
+service_orders_waiting_policies = {
+    PolicyType.CHANNEL_PROTECTION: asyncio.Queue(),
+    PolicyType.FIREWALL: asyncio.Queue(),
+    PolicyType.SIEM: asyncio.Queue(),
+    PolicyType.TELEMETRY: asyncio.Queue()
+}
+
 @app.get(f"/v{VERSION}/serviceOrders", tags=["Service Orders"], responses={
     status.HTTP_503_SERVICE_UNAVAILABLE: {"description": "Could not get Service Orders from OpenSlice"}
 })
@@ -117,11 +124,24 @@ def list_service_orders() -> List[str]:
 def list_service_specs() -> List[str]:
     return [service_spec.name for service_spec in TmfApiConnector().list_service_specs()]
 
+@app.post(f"/v{VERSION}" + "/osl/{service_order_id}", tags=["Services"], responses={
+})
+async def handle_openslice_service_order(service_order_id: str, mspl: Request) -> str:
+    mspl_body = await mspl.body()
+    policy_type = PolicyType.from_mspl(mspl_body.decode("utf-8"))
+    print(policy_type)
+    if policy_type:
+        security_orchestrator = SecurityOrchestrator(settings.so_host)
+        if security_orchestrator.send_mspl(mspl_body):
+            await service_orders_waiting_policies[policy_type].put(service_order_id)
+            return service_order_id
+    return ""
+
 @app.post(f"/v{VERSION}/so", tags=["Security Orchestrator Policies"], responses={
     status.HTTP_400_BAD_REQUEST: {"description": "Missing service 'name' or 'id' from provided Service Specification"},
     status.HTTP_503_SERVICE_UNAVAILABLE: {"description": "Could not reach OpenSlice"}
 })
-async def handle_security_orchestrator_policy(service_spec: ServiceSpecWithAction) -> List[ServiceOrder]:
+async def handle_nmtd_policy(service_spec: ServiceSpecWithAction) -> List[ServiceOrder]:
     if not service_spec.name and not service_spec.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -137,22 +157,17 @@ async def handle_security_orchestrator_policy(service_spec: ServiceSpecWithActio
             service_orders.append(service_order)
     return service_orders
 
-@app.post(f"/v{VERSION}" + "/osl/{service_order_id}", tags=["Services"], responses={
-})
-async def handle_openslice_service_order(service_order_id: str, mspl: Request) -> ServiceOrder:
-    mspl_body = await mspl.body()
-    security_orchestrator = SecurityOrchestrator(settings.so_host)
-    if security_orchestrator.send_mspl(mspl_body):
-        # DO WORK
-        pass
-
 @app.post(f"/v{VERSION}/telemetry", tags=["Security Orchestrator Policies"], responses={
     status.HTTP_400_BAD_REQUEST: {"description": "Missing service 'name' or 'id' from provided Service Specification"},
     status.HTTP_503_SERVICE_UNAVAILABLE: {"description": "Could not reach OpenSlice"}
 })
-async def handle_telemetry_policy(telemetry_configuration: TelemetryPolicy) -> List[ServiceOrder]:
+async def handle_telemetry_policy(telemetry_configuration: TelemetryPolicy) -> Optional[ServiceOrder]:
     service_spec = telemetry_configuration.to_service_spec()
-    return await handle_security_orchestrator_policy(service_spec)
+    if not service_orders_waiting_policies[PolicyType.TELEMETRY].empty():
+        service_order_id = await service_orders_waiting_policies[PolicyType.TELEMETRY].get()
+        tmf_api_connector = TmfApiConnector(f"http://{settings.openslice_host}")
+        return tmf_api_connector.update_service_order(service_order_id, service_spec)
+    return None
 
 @app.post(f"/v{VERSION}/firewall", tags=["Security Orchestrator Policies"], responses={
     status.HTTP_400_BAD_REQUEST: {"description": "Missing service 'name' or 'id' from provided Service Specification"},
@@ -160,7 +175,11 @@ async def handle_telemetry_policy(telemetry_configuration: TelemetryPolicy) -> L
 })
 async def handle_firewall_policy(firewall_configuration: FirewallPolicy) -> List[ServiceOrder]:
     service_spec = firewall_configuration.to_service_spec()
-    return await handle_security_orchestrator_policy(service_spec)
+    if not service_orders_waiting_policies[PolicyType.FIREWALL].empty():
+        service_order_id = await service_orders_waiting_policies[PolicyType.FIREWALL].get()
+        tmf_api_connector = TmfApiConnector(f"http://{settings.openslice_host}")
+        return tmf_api_connector.update_service_order(service_order_id, service_spec)
+    return None
 
 @app.post(f"/v{VERSION}/siem", tags=["Security Orchestrator Policies"], responses={
     status.HTTP_400_BAD_REQUEST: {"description": "Missing service 'name' or 'id' from provided Service Specification"},
@@ -168,7 +187,11 @@ async def handle_firewall_policy(firewall_configuration: FirewallPolicy) -> List
 })
 async def handle_siem_policy(siem_configuration: SiemPolicy) -> List[ServiceOrder]:
     service_spec = siem_configuration.to_service_spec()
-    return await handle_security_orchestrator_policy(service_spec)
+    if not service_orders_waiting_policies[PolicyType.SIEM].empty():
+        service_order_id = await service_orders_waiting_policies[PolicyType.SIEM].get()
+        tmf_api_connector = TmfApiConnector(f"http://{settings.openslice_host}")
+        return tmf_api_connector.update_service_order(service_order_id, service_spec)
+    return None
 
 @app.post(f"/v{VERSION}/channelProtection", tags=["Security Orchestrator Policies"], responses={
     status.HTTP_400_BAD_REQUEST: {"description": "Missing service 'name' or 'id' from provided Service Specification"},
@@ -176,7 +199,11 @@ async def handle_siem_policy(siem_configuration: SiemPolicy) -> List[ServiceOrde
 })
 async def handle_channel_protection_policy(channel_protection_configuration: ChannelProtectionPolicy) -> List[ServiceOrder]:
     service_spec = channel_protection_configuration.to_service_spec()
-    return await handle_security_orchestrator_policy(service_spec)
+    if not service_orders_waiting_policies[PolicyType.CHANNEL_PROTECTION].empty():
+        service_order_id = await service_orders_waiting_policies[PolicyType.CHANNEL_PROTECTION].get()
+        tmf_api_connector = TmfApiConnector(f"http://{settings.openslice_host}")
+        return tmf_api_connector.update_service_order(service_order_id, service_spec)
+    return None
 
 if __name__ == "__main__":
     import uvicorn
