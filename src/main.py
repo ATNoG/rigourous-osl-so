@@ -129,7 +129,6 @@ def list_service_specs() -> List[str]:
 async def handle_openslice_service_order(service_order_id: str, mspl: Request) -> str:
     mspl_body = await mspl.body()
     policy_type = PolicyType.from_mspl(mspl_body.decode("utf-8"))
-    print(policy_type)
     if policy_type:
         security_orchestrator = SecurityOrchestrator(f"http://{settings.so_host}")
         if security_orchestrator.send_mspl(mspl_body):
@@ -173,7 +172,7 @@ async def handle_telemetry_policy(telemetry_configuration: TelemetryPolicy) -> O
     status.HTTP_400_BAD_REQUEST: {"description": "Missing service 'name' or 'id' from provided Service Specification"},
     status.HTTP_503_SERVICE_UNAVAILABLE: {"description": "Could not reach OpenSlice"}
 })
-async def handle_firewall_policy(firewall_configuration: FirewallPolicy) -> List[ServiceOrder]:
+async def handle_firewall_policy(firewall_configuration: FirewallPolicy) -> Optional[ServiceOrder]:
     service_spec = firewall_configuration.to_service_spec()
     if not service_orders_waiting_policies[PolicyType.FIREWALL].empty():
         service_order_id = await service_orders_waiting_policies[PolicyType.FIREWALL].get()
@@ -185,7 +184,7 @@ async def handle_firewall_policy(firewall_configuration: FirewallPolicy) -> List
     status.HTTP_400_BAD_REQUEST: {"description": "Missing service 'name' or 'id' from provided Service Specification"},
     status.HTTP_503_SERVICE_UNAVAILABLE: {"description": "Could not reach OpenSlice"}
 })
-async def handle_siem_policy(siem_configuration: SiemPolicy) -> List[ServiceOrder]:
+async def handle_siem_policy(siem_configuration: SiemPolicy) -> Optional[ServiceOrder]:
     service_spec = siem_configuration.to_service_spec()
     if not service_orders_waiting_policies[PolicyType.SIEM].empty():
         service_order_id = await service_orders_waiting_policies[PolicyType.SIEM].get()
@@ -197,7 +196,7 @@ async def handle_siem_policy(siem_configuration: SiemPolicy) -> List[ServiceOrde
     status.HTTP_400_BAD_REQUEST: {"description": "Missing service 'name' or 'id' from provided Service Specification"},
     status.HTTP_503_SERVICE_UNAVAILABLE: {"description": "Could not reach OpenSlice"}
 })
-async def handle_channel_protection_policy(channel_protection_configuration: ChannelProtectionPolicy) -> List[ServiceOrder]:
+async def handle_channel_protection_policy(channel_protection_configuration: ChannelProtectionPolicy) -> Optional[ServiceOrder]:
     service_spec = channel_protection_configuration.to_service_spec()
     if not service_orders_waiting_policies[PolicyType.CHANNEL_PROTECTION].empty():
         service_order_id = await service_orders_waiting_policies[PolicyType.CHANNEL_PROTECTION].get()

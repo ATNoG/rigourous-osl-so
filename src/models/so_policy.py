@@ -15,9 +15,7 @@ class PolicyType(str, Enum):
 
     @classmethod
     def from_mspl(cls, mspl: str) -> Optional["PolicyType"]:
-        print(mspl)
         doc = xmltodict.parse(mspl)
-        print(doc)
         try:
             name = doc["ITResourceOrchestration"]["ITResource"]["configuration"]["capability"]["Name"]
             return PolicyType(name)
@@ -31,9 +29,9 @@ class Policy(BaseModel, ABC):
             service_spec_characteristic=[
                 ServiceSpecCharacteristic(
                     name="CONFIG",
-                    service_spec_characteristic_value=[
+                    serviceSpecCharacteristicValue=[
                         ServiceSpecCharacteristicValue(
-                            value=ServiceSpecCharacteristicValueAndAlias.from_string(self.__json__())
+                            value=ServiceSpecCharacteristicValueAndAlias.from_string(str(self.__json__()))
                         )
                     ]
                 )
