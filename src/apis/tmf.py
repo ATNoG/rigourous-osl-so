@@ -87,6 +87,20 @@ class Tmf(OpenSlice):
             return [ServiceSpec(**service_spec) for service_spec in response.json()]
         except:
             return []
+        
+    def update_service_spec(self, id: str, json: Any) -> Optional[ServiceSpec]:
+        headers = copy.deepcopy(self._headers)
+        headers["Content-Type"] = "application/json;charset=utf-8"
+        response = requests.patch(f"{self._url}/serviceCatalogManagement/{self.API_VERSION}/serviceSpecification/{id}",
+                                  headers=headers,
+                                  json=json,
+                                  auth=self._auth)
+        if response.status_code != requests.codes.ok:
+            super().handle_response_not_ok(response)
+        try:
+            return ServiceSpec(**response.json())
+        except:
+            return None
 
     def get_service_inventory(self, id: str) -> Optional[ServiceInventory]:
         response = requests.get(f"{self._url}/serviceInventory/{self.API_VERSION}/service/{id}",

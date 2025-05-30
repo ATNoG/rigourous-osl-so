@@ -1,6 +1,6 @@
-from enum import Enum
 import json
 
+from enum import Enum
 from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Any, List, Optional
 
@@ -193,11 +193,20 @@ class ServiceSpec(BaseModel):
         return None
     
     def __json__(self) -> dict:
-        return {
-            "name": self.name,
-            "id": self.id,
-            "version": self.version
-        }
+        json = {}
+        if self.name is not None:
+            json["name"] = self.name
+        if self.id is not None:
+            json["id"] = self.id
+        if self.version is not None:
+            json["version"] = self.version
+        if self.description is not None:
+            json["description"] = self.description
+        if self.type is not None:
+            json["@type"] = self.type.value
+        if self.service_spec_characteristic is not None:
+            json["serviceSpecCharacteristic"] = [service_spec_characteristic.__json__() for service_spec_characteristic in self.service_spec_characteristic]
+        return json
     
     def __eq__(self, other) -> bool:
         if not isinstance(other, ServiceSpec):

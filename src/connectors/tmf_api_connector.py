@@ -146,3 +146,8 @@ class TmfApiConnector:
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Could not get Service Inventory from OpenSlice"
             )
+
+    def update_service_spec(self, service_spec: ServiceSpec) -> Optional[ServiceSpec]:
+        if not service_spec.id:
+            return None
+        return self._api.update_service_spec(service_spec.id, service_spec.__json__())
