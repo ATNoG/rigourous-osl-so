@@ -1,3 +1,4 @@
+from enum import Enum
 import json
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -171,15 +172,25 @@ class ServiceSpecCharacteristic(BaseModel):
                 if len(self.service_spec_characteristic_value) > 1 \
                 else self.service_spec_characteristic_value[0].__json__()
         }
+    
+class ServiceSpecType(str, Enum):
+    CFSS = "CustomerFacingServiceSpecification"
+    RFSS = "ResourceFacingServiceSpecification"
 
 class ServiceSpec(BaseModel):
     name: Optional[str] = None
     id: Optional[str] = None
     version: Optional[str] = None
     description: Optional[str] = None
-    type: Optional[str] = Field(alias="@type", default=None)
+    type: Optional[ServiceSpecType] = Field(alias="@type", default=None)
     service_spec_characteristic: Optional[List[ServiceSpecCharacteristic]] = \
         Field(alias="serviceSpecCharacteristic", default=[])
+    
+    def find_characteristic_by_suffix(self, suffix: str) -> Optional[ServiceSpecCharacteristic]:
+        for service_spec_characteristic in self.service_spec_characteristic:
+            if service_spec_characteristic.name.lower().endswith(suffix.lower()):
+                return service_spec_characteristic
+        return None
     
     def __json__(self) -> dict:
         return {

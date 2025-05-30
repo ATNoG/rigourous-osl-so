@@ -10,8 +10,9 @@ from typing import Dict, List, Optional
 from apis.security_orchestrator import SecurityOrchestrator
 from connectors.tmf_api_connector import TmfApiConnector
 from models.mtd_action import MtdAction
+from models.risk_specification import RiskSpecification
 from models.service_order import ServiceOrder
-from models.service_spec import ServiceSpec, ServiceSpecWithAction
+from models.service_spec import ServiceSpec, ServiceSpecType, ServiceSpecWithAction
 from models.so_policy import ChannelProtectionPolicy, FirewallPolicy, PolicyType, SiemPolicy, TelemetryPolicy
 from settings import settings
 
@@ -37,6 +38,10 @@ metadata_tags = [
     {
         "name": "Security Orchestrator Policies",
         "description": "Handles policies from Security Orchestrator."
+    },
+    {
+        "name": "Risk Specification",
+        "description": "Handles TRA risk score and PQ privacy score."
     }
 ]
 
@@ -61,7 +66,7 @@ async def handle_mtd_actions(openslice_host: str):
         await asyncio.sleep(max(60.0 - elapsed_time, 1.0))
 
 def _update_mtd_actions_from_service_orders(mtd_actions: Dict[str, List[MtdAction]], tmf_api_connector: TmfApiConnector):
-    active_service_order_ids = [service_order.id for service_order in tmf_api_connector.list_active_service_orders()]
+    active_service_order_ids = [service_order.id for service_order in tmf_api_connector.list_active_service_orders() if service_order.id]
     for service_order_id in active_service_order_ids:
         service_order = tmf_api_connector.get_service_order(service_order_id)
         if service_order:
@@ -78,7 +83,7 @@ def _update_service_orders(mtd_actions: Dict[str, List[MtdAction]], tmf_api_conn
             if service_characteristic:
                 service_order_characteristics.append(service_characteristic)
         if service_order_characteristics:
-            tmf_api_connector.update_service_order_characteristics(service_order_id, ServiceSpec(serviceSpecCharacteristic=service_order_characteristics))
+            tmf_api_connector.update_service_order(service_order_id, ServiceSpec(serviceSpecCharacteristic=service_order_characteristics))
             logging.debug(f"Updating Service Order {service_order_id} with characteristics {service_order_characteristics}")
 
 @asynccontextmanager
@@ -116,13 +121,13 @@ service_orders_waiting_policies = {
     status.HTTP_503_SERVICE_UNAVAILABLE: {"description": "Could not get Service Orders from OpenSlice"}
 })
 def list_service_orders() -> List[str]:
-    return [service_order.id for service_order in TmfApiConnector().list_active_service_orders()]
+    return [service_order.id for service_order in TmfApiConnector(f"http://{settings.openslice_host}").list_active_service_orders() if service_order.id]
 
 @app.get(f"/v{VERSION}/serviceSpecs", tags=["Service Specifications"], responses={
     status.HTTP_503_SERVICE_UNAVAILABLE: {"description": "Could not get Service Specifications from OpenSlice"}
 })
 def list_service_specs() -> List[str]:
-    return [service_spec.name for service_spec in TmfApiConnector().list_service_specs()]
+    return [service_spec.name for service_spec in TmfApiConnector(f"http://{settings.openslice_host}").list_service_specs() if service_spec.name]
 
 @app.post(f"/v{VERSION}" + "/osl/{service_order_id}", tags=["Services"], responses={
 })
@@ -135,6 +140,28 @@ async def handle_openslice_service_order(service_order_id: str, mspl: Request) -
             await service_orders_waiting_policies[policy_type].put(service_order_id)
             return service_order_id
     return ""
+
+@app.post(f"/v{VERSION}/risk", tags=["Risk Specification"], responses={
+    status.HTTP_400_BAD_REQUEST: {"description": "Missing attribute 'cpe' in Risk Specification"},
+    status.HTTP_503_SERVICE_UNAVAILABLE: {"description": "Could not reach OpenSlice"}
+})
+async def handle_risk_specification(risk_specification: RiskSpecification) -> List[ServiceSpec]:
+    if not risk_specification.cpe:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing attribute 'cpe' in Risk Specification"
+        )
+    affected_service_specs = []
+    tmf_api_connector = TmfApiConnector(f"http://{settings.openslice_host}")
+    service_spec_ids = [service_spec.id for service_spec in tmf_api_connector.list_service_specs() if service_spec.type == ServiceSpecType.CFSS]
+    logging.debug(f"Service Specs: {service_spec_ids}")
+    for service_spec_id in service_spec_ids:
+        service_spec = tmf_api_connector.get_service_spec(service_spec_id)
+        if not service_spec:
+            continue
+        if service_spec.find_characteristic_by_suffix("CPE") == risk_specification.cpe:
+            tmf_api_connector
+    return affected_service_specs
 
 @app.post(f"/v{VERSION}/so", tags=["Security Orchestrator Policies"], responses={
     status.HTTP_400_BAD_REQUEST: {"description": "Missing service 'name' or 'id' from provided Service Specification"},

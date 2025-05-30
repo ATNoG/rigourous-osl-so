@@ -19,6 +19,12 @@ class TmfApiConnector:
             return self._api.get_service_order(id)
         except HTTPException:
             return None
+        
+    def get_service_spec(self, id: str) -> Optional[ServiceSpec]:
+        try:
+            return self._api.get_service_spec(id)
+        except HTTPException:
+            return None
 
     def list_active_service_orders(self) -> List[ServiceOrder]:
         try:
@@ -49,14 +55,6 @@ class TmfApiConnector:
         
     def update_service_order(self, service_order_id: str, service_spec: ServiceSpecWithAction) -> Optional[ServiceOrder]:
         service_order = self.get_service_order(service_order_id)
-        return self.update_service_order_characteristics(service_order_id, service_spec)
-        
-    def update_service_order_characteristics(
-        self, 
-        service_order_id: str, 
-        service_spec: ServiceSpec
-    ) -> Optional[ServiceOrder]:
-        service_order = self._api.get_service_order(service_order_id)
         if not service_order:
             return None
         updated_service_order = \
