@@ -157,13 +157,16 @@ async def handle_risk_specification(risk_specification: RiskSpecification) -> Li
     logging.debug(f"Service Specs: {service_spec_ids}")
     for service_spec_id in service_spec_ids:
         service_spec = tmf_api_connector.get_service_spec(service_spec_id)
+        logging.debug(service_spec)
         if not service_spec:
             continue
-        if service_spec.find_characteristic_by_suffix("CPE") == risk_specification.cpe:
+        logging.debug(service_spec.get_characteristic("CPE"))
+        if service_spec.get_characteristic("CPE") == risk_specification.cpe:
             if risk_specification.privacy_score:
                 service_spec.set_characteristic("Privacy score", str(risk_specification.privacy_score))
             if risk_specification.risk_score:
                 service_spec.set_characteristic("Risk score", str(risk_specification.risk_score))
+            print("HERE:", service_spec.__json__())
             if tmf_api_connector.update_service_spec(service_spec):
                 affected_service_specs.append(service_spec)
     return affected_service_specs

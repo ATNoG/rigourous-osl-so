@@ -6,6 +6,10 @@ from typing import Any, List, Optional
 
 from models.action_type import ActionType
 
+class ServiceSpecType(str, Enum):
+    CFSS = "CustomerFacingServiceSpecification"
+    RFSS = "ResourceFacingServiceSpecification"
+
 class ServiceSpecCharacteristicValueAndAlias(BaseModel):
     value: Optional[str] = None
     alias: Optional[str] = None
@@ -94,14 +98,14 @@ class ServiceSpecCharacteristic(BaseModel):
         value_from = None
         value_to = None
         for service_spec_characteristic_value in service_spec_characteristic.get("serviceSpecCharacteristicValue", []):
-            if service_spec_characteristic_value.value.alias == "valueFrom":
-                value_from = service_spec_characteristic_value.value.value
-            elif service_spec_characteristic_value.value.alias == "valueTo":
-                value_to = service_spec_characteristic_value.value.value
+            if service_spec_characteristic_value.get("value", {}).get("alias", "") == "valueFrom":
+                value_from = service_spec_characteristic_value.get("value", {}).get("value", "")
+            elif service_spec_characteristic_value.get("value", {}).get("alias", "") == "valueTo":
+                value_to = service_spec_characteristic_value.get("value", {}).get("value", "")
         for service_spec_characteristic_value in service_spec_characteristic.get("serviceSpecCharacteristicValue", []):
-            if service_spec_characteristic_value.value.alias == "interval":
-                service_spec_characteristic_value.value_from = value_from
-                service_spec_characteristic_value.value_to = value_to
+            if service_spec_characteristic_value.get("value", {}).get("alias", "") == "interval":
+                service_spec_characteristic_value["valueFrom"] = value_from
+                service_spec_characteristic_value["valueTo"] = value_to
         return service_spec_characteristic
 
     def find_value_from_alias(self, alias: str) -> Optional[str]:
@@ -170,12 +174,8 @@ class ServiceSpecCharacteristic(BaseModel):
             "value": 
                 json.dumps([value.__json__() for value in self.service_spec_characteristic_value]) \
                 if len(self.service_spec_characteristic_value) > 1 \
-                else self.service_spec_characteristic_value[0].__json__()
+                else (self.service_spec_characteristic_value[0].__json__() if self.service_spec_characteristic_value else None)
         }
-    
-class ServiceSpecType(str, Enum):
-    CFSS = "CustomerFacingServiceSpecification"
-    RFSS = "ResourceFacingServiceSpecification"
 
 class ServiceSpec(BaseModel):
     name: Optional[str] = None
@@ -186,19 +186,25 @@ class ServiceSpec(BaseModel):
     service_spec_characteristic: Optional[List[ServiceSpecCharacteristic]] = \
         Field(alias="serviceSpecCharacteristic", default=[])
     
-    def find_characteristic_by_suffix(self, suffix: str) -> Optional[ServiceSpecCharacteristic]:
+    def get_characteristic(self, name: str) -> Optional[str]:
+        characteristic = self._find_characteristic_by_suffix(name)
+        if not characteristic or not characteristic.service_spec_characteristic_value:
+            return None
+        return characteristic.service_spec_characteristic_value[0].value.value
+    
+    def set_characteristic(self, name: str, value: str):
+        characteristic = self._find_characteristic_by_suffix(name)
+        if characteristic:
+            characteristic.service_spec_characteristic_value = [
+                ServiceSpecCharacteristicValue(value=ServiceSpecCharacteristicValueAndAlias.from_string(value), isDefault=True, valueType="FLOAT")
+            ]
+        print(self.service_spec_characteristic)
+
+    def _find_characteristic_by_suffix(self, suffix: str) -> Optional[ServiceSpecCharacteristic]:
         for service_spec_characteristic in self.service_spec_characteristic:
             if service_spec_characteristic.name.lower().endswith(suffix.lower()):
                 return service_spec_characteristic
         return None
-    
-    def set_characteristic(self, name: str, value: str):
-        characteristic = self.find_characteristic_by_suffix(name)
-        if characteristic:
-            characteristic.service_spec_characteristic_value = [
-                ServiceSpecCharacteristicValue(value=ServiceSpecCharacteristicValueAndAlias.from_string(value), is_default=True, valueType="FLOAT")
-            ]
-        print(self.service_spec_characteristic) # To debug if it gets updated or if "characteristic" is a copy
 
     def __json__(self) -> dict:
         json = {}
@@ -213,7 +219,32 @@ class ServiceSpec(BaseModel):
         if self.type is not None:
             json["@type"] = self.type.value
         if self.service_spec_characteristic is not None:
-            json["serviceSpecCharacteristic"] = [service_spec_characteristic.__json__() for service_spec_characteristic in self.service_spec_characteristic]
+            json["serviceSpecCharacteristic"] = self._jsonify_characteristics()
+        return json
+    
+    def _jsonify_characteristics(self) -> list:
+        json = []
+        for service_spec_characteristic in self.service_spec_characteristic:
+            json.append({
+                "name": service_spec_characteristic.name,
+                "description": service_spec_characteristic.description,
+                "valueType": service_spec_characteristic.value_type,
+                "configurable": service_spec_characteristic.configurable,
+                "minCardinality": service_spec_characteristic.min_cardinality,
+                "maxCardinality": service_spec_characteristic.max_cardinality,
+                "extensible": service_spec_characteristic.extensible,
+                "serviceSpecCharacteristicValue": self._jsonify_characteristic_values(service_spec_characteristic)
+            })
+        return json
+    
+    def _jsonify_characteristic_values(self, service_spec_characteristic: ServiceSpecCharacteristic) -> list:
+        json = []
+        for service_spec_characteristic_value in service_spec_characteristic.service_spec_characteristic_value:
+            json.append({
+                "value": service_spec_characteristic_value.value.__json__(),
+                "isDefault": service_spec_characteristic_value.is_default,
+                "valueType": service_spec_characteristic_value.value_type
+            })
         return json
     
     def __eq__(self, other) -> bool:
