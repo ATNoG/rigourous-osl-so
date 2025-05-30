@@ -198,7 +198,6 @@ class ServiceSpec(BaseModel):
             characteristic.service_spec_characteristic_value = [
                 ServiceSpecCharacteristicValue(value=ServiceSpecCharacteristicValueAndAlias.from_string(value), isDefault=True, valueType="FLOAT")
             ]
-        print(self.service_spec_characteristic)
 
     def _find_characteristic_by_suffix(self, suffix: str) -> Optional[ServiceSpecCharacteristic]:
         for service_spec_characteristic in self.service_spec_characteristic:
@@ -243,7 +242,10 @@ class ServiceSpec(BaseModel):
             json.append({
                 "value": service_spec_characteristic_value.value.__json__(),
                 "isDefault": service_spec_characteristic_value.is_default,
-                "valueType": service_spec_characteristic_value.value_type
+                "valueType": service_spec_characteristic_value.value_type,
+                "unitOfMeasure": service_spec_characteristic_value.unit_of_measure,
+                "valueFrom": service_spec_characteristic_value.value_from,
+                "valueTo": service_spec_characteristic_value.value_to
             })
         return json
     
