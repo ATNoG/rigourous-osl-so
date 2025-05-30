@@ -192,6 +192,14 @@ class ServiceSpec(BaseModel):
                 return service_spec_characteristic
         return None
     
+    def set_characteristic(self, name: str, value: str):
+        characteristic = self.find_characteristic_by_suffix(name)
+        if characteristic:
+            characteristic.service_spec_characteristic_value = [
+                ServiceSpecCharacteristicValue(value=ServiceSpecCharacteristicValueAndAlias.from_string(value), is_default=True, valueType="FLOAT")
+            ]
+        print(self.service_spec_characteristic) # To debug if it gets updated or if "characteristic" is a copy
+
     def __json__(self) -> dict:
         json = {}
         if self.name is not None:

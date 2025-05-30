@@ -160,7 +160,12 @@ async def handle_risk_specification(risk_specification: RiskSpecification) -> Li
         if not service_spec:
             continue
         if service_spec.find_characteristic_by_suffix("CPE") == risk_specification.cpe:
-            tmf_api_connector
+            if risk_specification.privacy_score:
+                service_spec.set_characteristic("Privacy score", str(risk_specification.privacy_score))
+            if risk_specification.risk_score:
+                service_spec.set_characteristic("Risk score", str(risk_specification.risk_score))
+            if tmf_api_connector.update_service_spec(service_spec):
+                affected_service_specs.append(service_spec)
     return affected_service_specs
 
 @app.post(f"/v{VERSION}/so", tags=["Security Orchestrator Policies"], responses={
