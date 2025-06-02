@@ -39,7 +39,7 @@ class ServiceSpecCharValueHandler(BaseModel):
         value_list = []
         try:
             value_list = cls._get_value_ranges_from_json(values)
-        except json.JSONDecodeError as json_error:
+        except json.JSONDecodeError:
             pass
         return cls(list_of_values=value_list) if value_list else None
     
