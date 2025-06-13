@@ -1,7 +1,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "nmtd.name" -}}
+{{- define "onboarding-tools.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -10,7 +10,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "nmtd.fullname" -}}
+{{- define "onboarding-tools.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -26,16 +26,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "nmtd.chart" -}}
+{{- define "onboarding-tools.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "nmtd.labels" -}}
-helm.sh/chart: {{ include "nmtd.chart" . }}
-{{ include "nmtd.selectorLabels" . }}
+{{- define "onboarding-tools.labels" -}}
+helm.sh/chart: {{ include "onboarding-tools.chart" . }}
+{{ include "onboarding-tools.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -45,17 +45,17 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "nmtd.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "nmtd.name" . }}
+{{- define "onboarding-tools.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "onboarding-tools.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "nmtd.serviceAccountName" -}}
+{{- define "onboarding-tools.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "nmtd.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "onboarding-tools.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}

@@ -19,7 +19,7 @@ from settings import settings
 VERSION = 2
 
 description = """
-NMTD performs Moving Target Defense operations on KNF-based network services.
+The Onboarding Tools is capable of performing Moving Target Defense operations on KNF-based network services; receive and enforce policies from the Security Orchestrator; and receive and update the risk score of services based on a Risk Specification provided by the Threat Risk Assessor and Privacy Quantifier from the RIGOUROUS project.
 """
 
 metadata_tags = [
@@ -95,7 +95,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     lifespan=lifespan,
-    title="Network-based Moving Target Defense",
+    title="Onboarding Tools",
     description=description,
     summary="Onboard and configure KNF-based network services.",
     version=f"0.0.{VERSION}",
