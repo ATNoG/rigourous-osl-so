@@ -98,12 +98,12 @@ class ServiceSpecCharacteristic(BaseModel):
         value_from = None
         value_to = None
         for service_spec_characteristic_value in service_spec_characteristic.get("serviceSpecCharacteristicValue", []):
-            if service_spec_characteristic_value.get("value", {}).get("alias", "") == "valueFrom":
+            if service_spec_characteristic_value.dict().get("value", {}).get("alias", "") == "valueFrom":
                 value_from = service_spec_characteristic_value.get("value", {}).get("value", "")
-            elif service_spec_characteristic_value.get("value", {}).get("alias", "") == "valueTo":
+            elif service_spec_characteristic_value.dict().get("value", {}).get("alias", "") == "valueTo":
                 value_to = service_spec_characteristic_value.get("value", {}).get("value", "")
         for service_spec_characteristic_value in service_spec_characteristic.get("serviceSpecCharacteristicValue", []):
-            if service_spec_characteristic_value.get("value", {}).get("alias", "") == "interval":
+            if service_spec_characteristic_value.dict().get("value", {}).get("alias", "") == "interval":
                 service_spec_characteristic_value["valueFrom"] = value_from
                 service_spec_characteristic_value["valueTo"] = value_to
         return service_spec_characteristic
