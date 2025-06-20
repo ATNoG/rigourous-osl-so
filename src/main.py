@@ -2,6 +2,9 @@ import asyncio
 import logging
 import time
 
+import os
+import psutil
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -52,30 +55,37 @@ logging_level = {
     "DEBUG": logging.DEBUG
 }
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging_level.get(settings.log_level.upper(), logging.DEBUG), format='%(asctime)s %(levelname)s: %(message)s')
+logging.basicConfig(level=logging_level.get(settings.log_level.upper()), format='%(asctime)s %(levelname)s: %(message)s')
+
+process = psutil.Process(os.getpid())
 
 async def handle_mtd_actions(openslice_host: str):
     mtd_actions: Dict[str, List[MtdAction]] = {}
     tmf_api_connector = TmfApiConnector(f"http://{openslice_host}")
+    start_mem = process.memory_info().rss
     while True:
         start_time = time.monotonic()
         _update_mtd_actions_from_service_orders(mtd_actions, tmf_api_connector)
         _update_service_orders(mtd_actions, tmf_api_connector)
+        diff_mem = process.memory_info().rss - start_mem
+        print("Memory diff:", diff_mem)
+        print(mtd_actions)
         elapsed_time = time.monotonic() - start_time
         logging.debug(f"Elapsed time: {elapsed_time}")
         await asyncio.sleep(max(60.0 - elapsed_time, 1.0))
 
 def _update_mtd_actions_from_service_orders(mtd_actions: Dict[str, List[MtdAction]], tmf_api_connector: TmfApiConnector):
-    active_service_order_ids = [service_order.id for service_order in tmf_api_connector.list_active_service_orders() if service_order.id]
+    active_service_order_ids = [service_order.id for service_order in tmf_api_connector.list_service_orders() if service_order.id]
     for service_order_id in active_service_order_ids:
         service_order = tmf_api_connector.get_service_order(service_order_id)
-        if service_order:
+        if service_order and service_order.is_active():
             list_of_mtd_actions = MtdAction.from_service_order(service_order, mtd_actions.get(service_order_id, []))
             if list_of_mtd_actions:
                 mtd_actions[service_order_id] = list_of_mtd_actions
     logging.debug(f"Scheduled MTD actions: {mtd_actions}")
 
 def _update_service_orders(mtd_actions: Dict[str, List[MtdAction]], tmf_api_connector: TmfApiConnector):
+    start_time = time.monotonic()
     for service_order_id, value in mtd_actions.items():
         service_order_characteristics = []
         for mtd_action in value:
@@ -85,6 +95,8 @@ def _update_service_orders(mtd_actions: Dict[str, List[MtdAction]], tmf_api_conn
         if service_order_characteristics:
             tmf_api_connector.update_service_order(service_order_id, ServiceSpec(serviceSpecCharacteristic=service_order_characteristics))
             logging.debug(f"Updating Service Order {service_order_id} with characteristics {service_order_characteristics}")
+    elapsed_time = time.monotonic() - start_time
+    print("Elapsed time:", elapsed_time)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

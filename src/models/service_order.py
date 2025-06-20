@@ -1,4 +1,3 @@
-from datetime import datetime
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
@@ -7,8 +6,7 @@ from models.service_spec import ServiceSpec, ServiceSpecCharacteristic
 
 class OrderItemService(BaseModel):
     service_spec: Optional[ServiceSpec] = Field(alias="serviceSpecification", default=None)
-    service_chars: Optional[List[ServiceSpecCharacteristic]] = \
-        Field(alias="serviceCharacteristic", default=None)
+    service_chars: Optional[List[ServiceSpecCharacteristic]] = Field(alias="serviceCharacteristic", default=None)
     supporting_services: Optional[List[ServiceInventory]] = Field(alias="supportingService", default=None)
     state: Optional[str] = None
 
@@ -31,8 +29,8 @@ class OrderItemService(BaseModel):
             self.state == other.state
 
 class OrderItem(BaseModel):
-    service: OrderItemService
-    action: str = "add"
+    service: Optional[OrderItemService] = None
+    action: Optional[str] = "add"
     id: Optional[str] = None
     uuid: Optional[str] = None
     href: Optional[str] = None
@@ -74,10 +72,6 @@ class ServiceOrder(BaseModel):
     requested_completion_date: Optional[str] = Field(alias="requestedCompletionDate", default=None)
     requested_start_date: Optional[str] = Field(alias="requestedStartDate", default=None)
     order_items: Optional[List[OrderItem]] = Field(alias="orderItem", default=None)
-    
-    @classmethod
-    def _convert_datetime_to_string(cls, date_time: datetime) -> str:
-        return date_time.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
     def is_active(self) -> bool:
         if not self.order_items:

@@ -25,6 +25,15 @@ class TmfApiConnector:
             return self._api.get_service_spec(id)
         except HTTPException:
             return None
+    
+    def list_service_orders(self) -> List[ServiceOrder]:
+        try:
+            return self._api.list_service_orders()
+        except HTTPException:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Could not get Service Orders from OpenSlice"
+            )
 
     def list_active_service_orders(self) -> List[ServiceOrder]:
         try:
